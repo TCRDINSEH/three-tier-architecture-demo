@@ -3,8 +3,9 @@ pipeline {
 
     environment {
         PROJECT_ID = 'applied-pager-476808-j5'
-        GCR_REGION = 'gcr.io'
-        IMAGE_NAME = 'robotshop'
+        REGION = 'us-central1' // adjust to your GCP region
+        REPO = "${REGION}-docker.pkg.dev/${PROJECT_ID}/robotshop" // Artifact Registry repo
+        TAG = "${BUILD_NUMBER}"
         CLUSTER_NAME = 'gke-cluster'
         CLUSTER_ZONE = 'us-central1-a'
         HELM_CHART_PATH = 'K8s/helm'
@@ -30,34 +31,31 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
+         stage('Docker Build & Push Images') {
             steps {
-                sh '''
-                    docker compose build
-
-                '''
+                script {
+                    def services = [
+                        "mongodb","catalogue","user","cart","mysql",
+                        "shipping","ratings","payment","dispatch","web"
+                    ]
+                    for (svc in services) {
+                        sh """
+                            docker build -t $REPO/rs-${svc}:$TAG ${svc}
+                            docker push $REPO/rs-${svc}:$TAG
+                        """
+                    }
+                    // Prebuilt images (redis, rabbitmq) are pulled from Docker Hub, no need to build/push
+                }
             }
         }
 
-        stage('Push Images to GCR') {
-            steps {
-                sh '''
-                    for service in $(docker-compose config --services); do
-                        IMAGE_TAG=${GCR_REGION}/$PROJECT_ID/${IMAGE_NAME}-$service:${BUILD_NUMBER}
-                        docker tag robotshop_${service} $IMAGE_TAG
-                        docker push $IMAGE_TAG
-                    done
-                '''
-            }
-        }
-
-        stage('Deploy to GKE') {
+            stage('Deploy to GKE') {
             steps {
                 sh '''
                     gcloud container clusters get-credentials $CLUSTER_NAME --zone $CLUSTER_ZONE --project $PROJECT_ID
                     helm upgrade --install robotshop ${HELM_CHART_PATH} \
-                        --set image.repository=${GCR_REGION}/$PROJECT_ID/${IMAGE_NAME} \
-                        --set image.tag=${BUILD_NUMBER}
+                        --set global.repo=$REPO \
+                        --set global.tag=$TAG
                 '''
             }
         }
