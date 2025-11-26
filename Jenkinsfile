@@ -35,7 +35,7 @@ pipeline {
             steps {
                 script {
                     def services = [
-                        "mongodb","catalogue","user","cart","mysql",
+                        "mongo","catalogue","user","cart","mysql",
                         "shipping","ratings","payment","dispatch","web"
                     ]
                     for (svc in services) {
