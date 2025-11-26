@@ -1,22 +1,21 @@
 #
 # Build
-#
-FROM debian:10 AS build
+
+FROM eclipse-temurin:8-jdk AS build
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates-java \
-        maven && \
+    apt-get install -y --no-install-recommends maven && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    update-ca-certificates -f
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/shipping
 
-COPY pom.xml /opt/shipping/
+COPY pom.xml .
 RUN mvn dependency:resolve
-COPY src /opt/shipping/src/
+
+COPY src ./src
 RUN mvn package
+
 
 #
 # Run
