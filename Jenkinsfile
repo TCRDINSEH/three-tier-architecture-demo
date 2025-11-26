@@ -8,7 +8,7 @@ pipeline {
         TAG = "${BUILD_NUMBER}"
         CLUSTER_NAME = 'gke-cluster'
         CLUSTER_ZONE = 'us-central1-a'
-        HELM_CHART_PATH = 'K8s/helm'
+        HELM_CHART_PATH = 'GKE/helm'
         CREDENTIALS_ID = 'gcp-service-account-key' // Jenkins credential for GCP JSON key
     }
 
